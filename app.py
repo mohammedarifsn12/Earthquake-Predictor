@@ -1,98 +1,38 @@
-#Code By-Shivansh Vasu
-
-
-from flask import Flask,request, url_for, redirect, render_template
+import streamlit as st
 import pickle
 import numpy as np
 
-app = Flask(__name__)
+# Load the model
+model = pickle.load(open('model.pkl', 'rb'))
 
-model=pickle.load(open('model.pkl','rb'))
-
-
-@app.route('/')
-def home():
-    return render_template('homepage.html')
-
-
-@app.route('/home')
-def home2():
-    return render_template('homepage.html')
-
-    
-@app.route('/error')
-def error():
-    return render_template('error.html')
-
-
-@app.route('/aboutproject')
-def aboutproject():
-    return render_template('aboutproject.html')
-
-
-
-@app.route('/review')
-def review():
-    return render_template('review.html')
-
-
-@app.route('/sourcecode')
-def sourcecode():
-    return render_template('sourcecode.html')
-
-@app.route('/creator')
-def creator():
-    return render_template('creator.html')
-
-
-
-
-
-@app.route('/prediction' , methods=['POST','GET'])
-def prediction():
-    data1 = int(float(request.form['a']))
-    data2 = int(float(request.form['b']))
-    data3 = int(float(request.form['c']))
-    print(data1,data2,data3)
+def predict_earthquake(data1, data2, data3):
     arr = np.array([[data1, data2, data3]])
-    output= model.predict(arr)
+    output = model.predict(arr)
+    return output[0]
 
+def get_severity_label(output):
+    if output < 4:
+        return 'No'
+    elif 4 <= output < 6:
+        return 'Low'
+    elif 6 <= output < 8:
+        return 'Moderate'
+    elif 8 <= output < 9:
+        return 'High'
+    else:
+        return 'Very High'
 
-    def to_str(var):
-     return str(list(np.reshape(np.asarray(var), (1, np.size(var)))[0]))[1:-1]
-     
-   
-    # return render_template('prediction.html')
+# Streamlit UI
+st.title("Earthquake Prediction App")
+st.write("Enter the required parameters to predict earthquake severity.")
 
-    if (output<4):
-        return render_template('prediction.html',p=to_str(output), q=' No ')
-    elif (output>4 & output<6):
-        return render_template('prediction.html',p=to_str(output), q= ' Low ')
-    elif (output>6 & output<8):
-        return render_template('prediction.html',p=to_str(output), q=' Moderate ')
-    elif (output>8 & output<9):
-        return render_template('prediction.html',p=to_str(output), q=' High ')
-    elif (output>9):
-        return render_template('prediction.html',p=to_str(output), q=' Very Hogh ')
-    
-    else :
-        return render_template('prediction.html',p=' N.A.', q= ' Undefined ')
+# Input fields
+data1 = st.number_input("Enter value for a:", min_value=0.0, step=0.1)
+data2 = st.number_input("Enter value for b:", min_value=0.0, step=0.1)
+data3 = st.number_input("Enter value for c:", min_value=0.0, step=0.1)
 
-
-if __name__ == "__main__":
-    app.run(debug=True)
-
-
-
-
-
-
-#Code By-Shivansh Vasu
-
-
-
-
-
-
-
-
+if st.button("Predict"):
+    output = predict_earthquake(int(data1), int(data2), int(data3))
+    severity = get_severity_label(output)
+    st.write(f"### Prediction: {output}")
+    st.write(f"### Severity Level: {severity}")

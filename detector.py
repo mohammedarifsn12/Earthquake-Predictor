@@ -1,26 +1,31 @@
+import streamlit as st
 import numpy as np
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
 import pickle
 
-# Load dataset
-data = pd.read_csv("dataset.csv")
+# Load the trained model
+with open("model.pkl", "rb") as file:
+    model = pickle.load(file)
 
-data = np.array(data)
-X = data[:, 0:-1]  # Features
-y = data[:, -1]    # Target variable
+def predict_earthquake(data1, data2, data3):
+    arr = np.array([[data1, data2, data3]], dtype=np.float64)  # Ensure correct dtype
+    print(f"Input shape: {arr.shape}, Input data: {arr}")  # Debugging
+    output = model.predict(arr)
+    return output[0]
 
-y = y.astype('int')
-X = X.astype('int')
+def get_severity_label(output):
+    severity_levels = {0: "Low", 1: "Moderate", 2: "High"}
+    return severity_levels.get(output, "Unknown")
 
-# Split data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+# Streamlit UI
+st.title("Earthquake Prediction App")
+st.write("Enter the required values to predict earthquake severity.")
 
-# Train the model
-rfc = RandomForestClassifier(random_state=0)
-rfc.fit(X_train, y_train)
+data1 = st.number_input("Enter value for feature 1:", min_value=0.0, step=0.1)
+data2 = st.number_input("Enter value for feature 2:", min_value=0.0, step=0.1)
+data3 = st.number_input("Enter value for feature 3:", min_value=0.0, step=0.1)
 
-# Save the trained model using pickle
-with open('model.pkl', 'wb') as model_file:
-    pickle.dump(rfc, model_file)
+if st.button("Predict"):
+    output = predict_earthquake(float(data1), float(data2), float(data3))
+    severity = get_severity_label(output)
+    st.write(f"### Prediction: {output}")
+    st.write(f"### Severity Level: {severity}")
